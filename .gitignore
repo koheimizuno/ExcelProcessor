@@ -1,0 +1,9 @@
+.vscode
+/venv
+src/__init__.py
+src/__pycache__
+src/excel/__pycache__
+src/excel/__init__.py
+src/schemas/__pycache__
+src/schemas/__init__.py
+tests/__init__.py
