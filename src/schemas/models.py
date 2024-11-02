@@ -11,11 +11,11 @@ class CellRange(BaseModel):
 
 class PasteTarget(BaseModel):
     sheet_name: str
-    cells: Dict[str, Cell]
-    is_insert: bool = False
+    cells: CellRange
+    is_insert: bool = True
 
 class ProcessingTarget(BaseModel):
-    cells: CellRange
+    cells: Optional[CellRange] = None
     values: Optional[List[List[Any]]] = None
     styles: Optional[Dict[str, Any]] = None
 
@@ -30,12 +30,12 @@ class Operation(BaseModel):
 
 class ExcelRequest(BaseModel):
     file: str  # Base64 encoded Excel file
-    mimetype: str
+    mimetype: str = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     operations: List[Operation]
 
 class ExcelResponse(BaseModel):
     output: str  # Base64 encoded Excel file
-    mimetype: str
+    mimetype: str = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     status: str
     error_code: int
     status_code: int

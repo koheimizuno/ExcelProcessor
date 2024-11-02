@@ -3,13 +3,13 @@ import io
 import openpyxl
 from openpyxl.utils import get_column_letter, column_index_from_string
 from src.schemas.models import Processing
-from src.excel.operations import ExcelOperations
+from src.excel.operations import xlsx_operation
 
 class ExcelProcessor:
     def __init__(self, excel_file: io.BytesIO):
         """Initialize ExcelProcessor with an Excel file."""
         self.workbook = openpyxl.load_workbook(excel_file)
-        self.operations = ExcelOperations(self.workbook)
+        self.operations = xlsx_operation(self.workbook)
 
     def process_operations(self, sheet_name: str, processing: List[Processing]) -> None:
         """Process a list of operations for a specific sheet."""

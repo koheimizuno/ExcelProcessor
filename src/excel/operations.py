@@ -4,9 +4,9 @@ from openpyxl.utils import get_column_letter, column_index_from_string
 from src.schemas.models import Processing
 from src.excel.utils import apply_styles, get_cell_range
 
-class ExcelOperations:
+class xlsx_operation:
     def __init__(self, workbook: openpyxl.Workbook):
-        """Initialize ExcelOperations with a workbook."""
+        """Initialize xlsx_operation with a workbook."""
         self.workbook = workbook
 
     def copy_cells(self, sheet_name: str, process: Processing) -> None:
