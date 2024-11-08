@@ -39,3 +39,9 @@ class ExcelResponse(BaseModel):
     status: str
     error_code: int
     status_code: int
+
+class ValidationError(BaseModel):
+    output: str  # Base64 encoded Excel file
+    status: str
+    error_code: int
+    status_code: int

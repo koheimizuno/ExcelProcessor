@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 import base64
 import io
@@ -8,6 +8,19 @@ from src.schemas.models import ExcelRequest, ExcelResponse
 from src.excel.processor import ExcelProcessor
 
 app = FastAPI(title="Excel Processing API")
+
+@app.exception_handler(HTTPException)
+async def exception_handler(request: Request, exc: HTTPException):
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "output": f"Bad Request: {exc.detail}",
+            "status": "Error",
+            "error_code": exc.status_code,
+            "status_code": exc.status_code,
+        }
+    )
 
 @app.post("/transform_excel", response_model=ExcelResponse)
 async def transform_excel(request: ExcelRequest) -> Dict[str, Any]:
@@ -37,10 +50,5 @@ async def transform_excel(request: ExcelRequest) -> Dict[str, Any]:
     except Exception as e:
         raise HTTPException(
             status_code=400,
-            detail={
-                "output": f"Bad Request: {str(e)}",
-                "status": "Error",
-                "error_code": 400,
-                "status_code": 400,
-            }
+            detail={str(e)}
         )
