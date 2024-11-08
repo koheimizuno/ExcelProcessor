@@ -1,6 +1,7 @@
 from typing import Optional, Dict, Any, List, Union
 import openpyxl
 from openpyxl.utils import get_column_letter, column_index_from_string
+from openpyxl.styles import PatternFill, Font, Border, Side, Alignment
 from src.schemas.models import Processing
 from src.excel.utils import apply_styles, get_cell_range
 
@@ -27,12 +28,72 @@ class xlsx_operation:
                 target_col = column_index_from_string(paste_start.col_letter) + j
                 
                 if process.paste_target.is_insert:
-                    # Insert mode: shift existing cells
-                    target_sheet.insert_rows(target_row)
-                    target_sheet.insert_cols(target_col)
+                    if i == 0:  # Only insert once per column
+                        target_sheet.insert_cols(target_col)
+                    if j == 0:  # Only insert once per row
+                        target_sheet.insert_rows(target_row)
                 
                 target_cell = target_sheet.cell(row=target_row, column=target_col)
                 target_cell.value = source_cell.value
+                apply_styles(source_cell, target_cell)
+
+    def set_cells(self, sheet_name: str, process: Processing) -> None:
+        """Set cell values and styles."""
+        if not process.target:
+            raise ValueError("Target is required for set_cells operation")
+
+        sheet = self.workbook[sheet_name]
+        cell_range = get_cell_range(process.target.cells)
+        
+        # Set values if provided
+        if process.target.values:
+            for i, row_values in enumerate(process.target.values):
+                for j, value in enumerate(row_values):
+                    cell = sheet.cell(
+                        row=cell_range['rows'][0] + i,
+                        column=cell_range['cols'][0] + j
+                    )
+                    cell.value = value
+        
+        # Set styles if provided
+        if process.target.styles:
+            self._apply_styles_to_range(sheet, cell_range, process.target.styles)
+
+    def _apply_styles_to_range(self, sheet, cell_range: Dict[str, List[int]], styles: Dict[str, Any]) -> None:
+        """Apply styles to a range of cells."""
+        for row in cell_range['rows']:
+            for col in cell_range['cols']:
+                cell = sheet.cell(row=row, column=col)
+                
+                # Apply individual cell styles
+                if 'cells' in styles:
+                    cell_style = styles['cells'].get(f"{get_column_letter(col)}{row}")
+                    if cell_style:
+                        apply_styles(None, cell, cell_style)
+                
+                # Apply border styles
+                if 'border' in styles:
+                    self._apply_border_styles(cell, styles['border'], row, col, cell_range)
+
+    def _apply_border_styles(self, cell, border_styles: Dict[str, Any], row: int, col: int, cell_range: Dict[str, List[int]]) -> None:
+        """Apply border styles to a cell based on its position in the range."""
+        is_top = row == cell_range['rows'][0]
+        is_bottom = row == cell_range['rows'][-1]
+        is_left = col == cell_range['cols'][0]
+        is_right = col == cell_range['cols'][-1]
+
+        border_sides = {}
+        if is_top and border_styles.get('top'):
+            border_sides['top'] = Side(**border_styles['top'])
+        if is_bottom and border_styles.get('bottom'):
+            border_sides['bottom'] = Side(**border_styles['bottom'])
+        if is_left and border_styles.get('left'):
+            border_sides['left'] = Side(**border_styles['left'])
+        if is_right and border_styles.get('right'):
+            border_sides['right'] = Side(**border_styles['right'])
+
+        if border_sides:
+            cell.border = Border(**border_sides)
 
     def copy_sheet(self, sheet_name: str, process: Processing) -> None:
         """Copy entire sheet."""
