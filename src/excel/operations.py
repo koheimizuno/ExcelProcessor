@@ -19,22 +19,20 @@ class xlsx_operation:
         target_sheet = self.workbook[process.paste_target.sheet_name]
         
         source_range = get_cell_range(process.target.cells)
-        paste_start = process.paste_target.cells["starting_point"]
+        target_range = get_cell_range(process.paste_target.cells)
         
-        for i, row in enumerate(source_range['rows']):
-            for j, col in enumerate(source_range['cols']):
-                source_cell = source_sheet.cell(row=row, column=col)
-                target_row = paste_start.row + i
-                target_col = column_index_from_string(paste_start.col_letter) + j
+        for i in range(len(source_range['rows'])):
+            for j in range(len(source_range['cols'])):
+                source_row = source_range['rows'][i]
+                source_col = source_range['cols'][j]
+                target_row = target_range['rows'][i]
+                target_col = target_range['cols'][j]
                 
-                if process.paste_target.is_insert:
-                    if i == 0:  # Only insert once per column
-                        target_sheet.insert_cols(target_col)
-                    if j == 0:  # Only insert once per row
-                        target_sheet.insert_rows(target_row)
+                source_cell = source_sheet.cell(row=source_row, column=source_col)
                 
                 target_cell = target_sheet.cell(row=target_row, column=target_col)
                 target_cell.value = source_cell.value
+                
                 apply_styles(source_cell, target_cell)
 
     def set_cells(self, sheet_name: str, process: Processing) -> None:
@@ -94,12 +92,13 @@ class xlsx_operation:
 
         if border_sides:
             cell.border = Border(**border_sides)
+    
 
     def copy_sheet(self, sheet_name: str, process: Processing) -> None:
         """Copy entire sheet."""
         if sheet_name not in self.workbook.sheetnames:
-            raise ValueError(f"Sheet {sheet_name} does not exist")
-            
+            raise ValueError(f"Sheet '{sheet_name}' not found")  # Removed period, changed message
+                
         source = self.workbook[sheet_name]
         target = self.workbook.copy_worksheet(source)
         target.title = f"{sheet_name}_copy"
@@ -182,6 +181,7 @@ class xlsx_operation:
             # Hide columns
             for col in cell_range['cols']:
                 sheet.column_dimensions[get_column_letter(col)].hidden = True
+                
 
     def set_cells(self, sheet_name: str, process: Processing) -> None:
         """Set cell values and styles."""
