@@ -1,0 +1,7 @@
+Metadata-Version: 2.1
+Name: excel-processor
+Version: 0.1
+Requires-Dist: fastapi
+Requires-Dist: openpyxl
+Requires-Dist: pydantic
+Requires-Dist: pytest

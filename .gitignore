@@ -7,3 +7,5 @@ src/excel/__init__.py
 src/schemas/__pycache__
 src/schemas/__init__.py
 tests/__init__.py
+excel_processor.egg-info
+.pytest_cache
