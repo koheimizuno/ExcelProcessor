@@ -392,6 +392,127 @@ class TestExcelStyles:
         assert cell.alignment.horizontal == "center"
         assert cell.alignment.vertical == "center"
 
+    def test_italic_and_underline_styles(self, xlsx_op):
+        """Test applying italic and various underline styles"""
+        test_cases = [
+            {
+                "cell": "B2",
+                "styles": {
+                    "font": {
+                        "italic": True,
+                        "underline": None
+                    }
+                },
+                "description": "Italic only"
+            },
+            {
+                "cell": "B3",
+                "styles": {
+                    "font": {
+                        "italic": False,
+                        "underline": "single"
+                    }
+                },
+                "description": "Single underline only"
+            },
+            {
+                "cell": "B4",
+                "styles": {
+                    "font": {
+                        "italic": True,
+                        "underline": "double"
+                    }
+                },
+                "description": "Italic with double underline"
+            },
+            {
+                "cell": "B5",
+                "styles": {
+                    "font": {
+                        "name": "Arial",
+                        "size": 12,
+                        "bold": True,
+                        "italic": True,
+                        "underline": "single",
+                    }
+                },
+                "description": "Combined styles with italic and underline"
+            }
+        ]
+
+        for test_case in test_cases:
+            process = Processing(
+                processing_type="set_cells",
+                target=ProcessingTarget(
+                    cells=CellRange(
+                        start_cell=Cell(col_letter=test_case["cell"][0], 
+                                      row=int(test_case["cell"][1]))
+                    ),
+                    styles=test_case["styles"]
+                )
+            )
+            
+            xlsx_op.set_cells("Sheet1", process)
+            cell = xlsx_op.workbook["Sheet1"][test_case["cell"]]
+            
+            # Verify styles were applied correctly
+            for key, value in test_case["styles"]["font"].items():
+                assert getattr(cell.font, key) == value, \
+                    f"Failed to set {key} in {test_case['description']}"
+
+    def test_mixed_text_styles(self, xlsx_op):
+        """Test applying mixed styles (italic and underline) with values"""
+        process = Processing(
+            processing_type="set_cells",
+            target=ProcessingTarget(
+                cells=CellRange(
+                    start_cell=Cell(col_letter="B", row=2),
+                    end_cell=Cell(col_letter="D", row=2)
+                ),
+                values=[["Italic", "Underline", "Both"]],
+                styles={
+                    "cells": {
+                        "B2": {
+                            "font": {
+                                "italic": True,
+                                "underline": None
+                            }
+                        },
+                        "C2": {
+                            "font": {
+                                "italic": False,
+                                "underline": "single"
+                            }
+                        },
+                        "D2": {
+                            "font": {
+                                "italic": True,
+                                "underline": "double"
+                            }
+                        }
+                    }
+                }
+            )
+        )
+        
+        xlsx_op.set_cells("Sheet1", process)
+        sheet = xlsx_op.workbook["Sheet1"]
+        
+        # Verify cell B2 (Italic only)
+        assert sheet["B2"].value == "Italic"
+        assert sheet["B2"].font.italic is True
+        assert sheet["B2"].font.underline is None
+        
+        # Verify cell C2 (Underline only)
+        assert sheet["C2"].value == "Underline"
+        assert sheet["C2"].font.italic is False
+        assert sheet["C2"].font.underline == "single"
+        
+        # Verify cell D2 (Both italic and underline)
+        assert sheet["D2"].value == "Both"
+        assert sheet["D2"].font.italic is True
+        assert sheet["D2"].font.underline == "double"
+
 class TestUtils:
     def test_apply_styles(self):
         """Test applying styles from one cell to another"""
