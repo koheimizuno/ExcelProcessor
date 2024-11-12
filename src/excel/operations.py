@@ -4,6 +4,7 @@ from openpyxl.utils import get_column_letter, column_index_from_string
 from openpyxl.styles import PatternFill, Font, Border, Side, Alignment
 from src.schemas.models import Processing
 from src.excel.utils import apply_styles, get_cell_range
+from openpyxl.worksheet.dimensions import RowDimension, ColumnDimension
 
 class xlsx_operation:
     def __init__(self, workbook: openpyxl.Workbook):
@@ -52,13 +53,26 @@ class xlsx_operation:
                         column=cell_range['cols'][0] + j
                     )
                     cell.value = value
-        
+
         # Set styles if provided
         if process.target.styles:
             self._apply_styles_to_range(sheet, cell_range, process.target.styles)
 
     def _apply_styles_to_range(self, sheet, cell_range: Dict[str, List[int]], styles: Dict[str, Any]) -> None:
         """Apply styles to a range of cells."""
+        # Apply row height if specified
+        if 'row_height' in styles:
+            for row in cell_range['rows']:
+                dim = RowDimension(worksheet=sheet, index=row, height=float(styles['row_height']))
+                sheet.row_dimensions[row] = dim
+        
+        # Apply column width if specified
+        if 'column_width' in styles:
+            for col in cell_range['cols']:
+                col_letter = get_column_letter(col)
+                dim = ColumnDimension(worksheet=sheet, index=col_letter, width=float(styles['column_width']))
+                sheet.column_dimensions[col_letter] = dim
+        
         for row in cell_range['rows']:
             for col in cell_range['cols']:
                 cell = sheet.cell(row=row, column=col)
@@ -72,6 +86,12 @@ class xlsx_operation:
                 # Apply border styles
                 if 'border' in styles:
                     self._apply_border_styles(cell, styles['border'], row, col, cell_range)
+                
+                # Apply other styles (excluding row_height and column_width)
+                style_without_dimensions = {k: v for k, v in styles.items() 
+                                        if k not in ['border', 'cells', 'row_height', 'column_width']}
+                if style_without_dimensions:
+                    apply_styles(None, cell, style_without_dimensions)
 
     def _apply_border_styles(self, cell, border_styles: Dict[str, Any], row: int, col: int, cell_range: Dict[str, List[int]]) -> None:
         """Apply border styles to a cell based on its position in the range."""
@@ -182,32 +202,6 @@ class xlsx_operation:
             for col in cell_range['cols']:
                 sheet.column_dimensions[get_column_letter(col)].hidden = True
                 
-
-    def set_cells(self, sheet_name: str, process: Processing) -> None:
-        """Set cell values and styles."""
-        if not process.target:
-            raise ValueError("Target is required for set_cells operation")
-
-        sheet = self.workbook[sheet_name]
-        cell_range = get_cell_range(process.target.cells)
-        
-        # Set values if provided
-        if process.target.values:
-            for i, row_values in enumerate(process.target.values):
-                for j, value in enumerate(row_values):
-                    cell = sheet.cell(
-                        row=cell_range['rows'][0] + i,
-                        column=cell_range['cols'][0] + j
-                    )
-                    cell.value = value
-        
-        # Set styles if provided
-        if process.target.styles:
-            for row in cell_range['rows']:
-                for col in cell_range['cols']:
-                    cell = sheet.cell(row=row, column=col)
-                    apply_styles(None, cell, process.target.styles)
-
     def join_cells(self, sheet_name: str, process: Processing) -> None:
         """Merge cells in the specified range."""
         if not process.target or not process.target.cells:

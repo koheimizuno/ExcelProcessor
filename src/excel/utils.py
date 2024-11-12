@@ -60,10 +60,22 @@ def apply_styles(source_cell: Optional[openpyxl.cell.Cell],
     if styles:
         if 'font' in styles:
             target_cell.font = Font(**styles['font'])
-        if 'border' in styles:
-            target_cell.border = Border(**styles['border'])
+        
         if 'fill' in styles:
             target_cell.fill = PatternFill(**styles['fill'])
+        
+        if 'border' in styles:
+            # Convert border style dictionaries to Side objects
+            border_sides = {}
+            for side in ['left', 'right', 'top', 'bottom']:
+                if side in styles['border']:
+                    side_style = styles['border'][side]
+                    border_sides[side] = Side(
+                        style=side_style['style'],
+                        color=side_style['color']
+                    )
+            target_cell.border = Border(**border_sides)
+        
         if 'alignment' in styles:
             target_cell.alignment = Alignment(**styles['alignment'])
 

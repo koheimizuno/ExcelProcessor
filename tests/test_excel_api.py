@@ -179,6 +179,219 @@ class TestXlsxOperation:
         assert sheet['A2'].value is None
         assert sheet['B2'].value is None
 
+class TestExcelStyles:
+    @pytest.fixture
+    def xlsx_op(self):
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Sheet1"
+        return xlsx_operation(wb)
+
+    def test_individual_cell_borders(self, xlsx_op):
+        """Test applying borders to individual cells"""
+        process = Processing(
+            processing_type="set_cells",
+            target=ProcessingTarget(
+                cells=CellRange(
+                    start_cell=Cell(col_letter="B", row=2)
+                ),
+                styles={
+                    "border": {
+                        "top": {"style": "thin", "color": "FF0000"},
+                        "bottom": {"style": "double", "color": "0000FF"},
+                        "left": {"style": "medium", "color": "00FF00"},
+                        "right": {"style": "thick", "color": "000000"}
+                    }
+                }
+            )
+        )
+        
+        xlsx_op.set_cells("Sheet1", process)
+        cell = xlsx_op.workbook["Sheet1"]["B2"]
+        
+        assert cell.border.top.style == "thin"
+        assert cell.border.top.color.rgb == "00FF0000"
+        assert cell.border.bottom.style == "double"
+        assert cell.border.bottom.color.rgb == "000000FF"
+        assert cell.border.left.style == "medium"
+        assert cell.border.left.color.rgb == "0000FF00"
+        assert cell.border.right.style == "thick"
+        assert cell.border.right.color.rgb == "00000000"
+
+    def test_range_outline_border(self, xlsx_op):
+        """Test applying border to the outline of a cell range"""
+        process = Processing(
+            processing_type="set_cells",
+            target=ProcessingTarget(
+                cells=CellRange(
+                    start_cell=Cell(col_letter="B", row=2),
+                    end_cell=Cell(col_letter="D", row=4)
+                ),
+                styles={
+                    "border": {
+                        "outline": True,
+                        "top": {"style": "thick", "color": "000000"},
+                        "bottom": {"style": "thick", "color": "000000"},
+                        "left": {"style": "thick", "color": "000000"},
+                        "right": {"style": "thick", "color": "000000"}
+                    }
+                }
+            )
+        )
+        
+        xlsx_op.set_cells("Sheet1", process)
+        sheet = xlsx_op.workbook["Sheet1"]
+        
+        # Check top border
+        for col in range(2, 5):  # B to D
+            assert sheet.cell(row=2, column=col).border.top.style == "thick"
+        
+        # Check bottom border
+        for col in range(2, 5):
+            assert sheet.cell(row=4, column=col).border.bottom.style == "thick"
+        
+        # Check left border
+        for row in range(2, 5):
+            assert sheet.cell(row=row, column=2).border.left.style == "thick"
+        
+        # Check right border
+        for row in range(2, 5):
+            assert sheet.cell(row=row, column=4).border.right.style == "thick"
+
+    def test_background_and_font_colors(self, xlsx_op):
+        """Test applying background and font colors"""
+        process = Processing(
+            processing_type="set_cells",
+            target=ProcessingTarget(
+                cells=CellRange(
+                    start_cell=Cell(col_letter="B", row=2)
+                ),
+                styles={
+                    "fill": {
+                        "patternType": "solid",
+                        "fgColor": "FF0000"  # Red background
+                    },
+                    "font": {
+                        "color": "0000FF",  # Blue text
+                        "name": "Arial",
+                        "size": 12
+                    }
+                }
+            )
+        )
+        
+        xlsx_op.set_cells("Sheet1", process)
+        cell = xlsx_op.workbook["Sheet1"]["B2"]
+        
+        assert cell.fill.patternType == "solid"
+        assert cell.fill.fgColor.rgb == "00FF0000"
+        assert cell.font.color.rgb == "000000FF"
+
+    def test_font_properties(self, xlsx_op):
+        """Test applying various font properties"""
+        process = Processing(
+            processing_type="set_cells",
+            target=ProcessingTarget(
+                cells=CellRange(
+                    start_cell=Cell(col_letter="B", row=2)
+                ),
+                styles={
+                    "font": {
+                        "name": "Times New Roman",
+                        "size": 14,
+                        "bold": True,
+                        "italic": True,
+                        "underline": "single",
+                        "strike": True
+                    }
+                }
+            )
+        )
+        
+        xlsx_op.set_cells("Sheet1", process)
+        cell = xlsx_op.workbook["Sheet1"]["B2"]
+        
+        assert cell.font.name == "Times New Roman"
+        assert cell.font.size == 14
+        assert cell.font.bold is True
+        assert cell.font.italic is True
+        assert cell.font.underline == "single"
+        assert cell.font.strike is True
+
+    def test_row_height_and_column_width(self, xlsx_op):
+        """Test setting row height and column width"""
+        sheet = xlsx_op.workbook["Sheet1"]
+        process = Processing(
+            processing_type="set_cells",
+            target=ProcessingTarget(
+                cells=CellRange(
+                    start_cell=Cell(col_letter="B", row=2),
+                    end_cell=Cell(col_letter="D", row=4)
+                ),
+                values=[["Test"]], 
+                styles={
+                    "row_height": 30,
+                    "column_width": 15
+                }
+            )
+        )
+        
+        xlsx_op.set_cells("Sheet1", process)
+        
+        # Check row heights
+        for row in range(2, 5):
+            assert sheet.row_dimensions[row].height == 30
+        
+        # Check column widths
+        for col_letter in ['B', 'C', 'D']:
+            assert sheet.column_dimensions[col_letter].width == 15
+
+    def test_multiple_style_combinations(self, xlsx_op):
+        """Test applying multiple styles simultaneously"""
+        process = Processing(
+            processing_type="set_cells",
+            target=ProcessingTarget(
+                cells=CellRange(
+                    start_cell=Cell(col_letter="B", row=2)
+                ),
+                styles={
+                    "font": {
+                        "name": "Arial",
+                        "size": 12,
+                        "bold": True,
+                        "color": "FF0000"
+                    },
+                    "fill": {
+                        "patternType": "solid",
+                        "fgColor": "FFFF00"
+                    },
+                    "border": {
+                        "top": {"style": "thick", "color": "000000"},
+                        "bottom": {"style": "thick", "color": "000000"}
+                    },
+                    "alignment": {
+                        "horizontal": "center",
+                        "vertical": "center"
+                    }
+                }
+            )
+        )
+        
+        xlsx_op.set_cells("Sheet1", process)
+        cell = xlsx_op.workbook["Sheet1"]["B2"]
+        
+        # Verify all styles were applied correctly
+        assert cell.font.name == "Arial"
+        assert cell.font.size == 12
+        assert cell.font.bold is True
+        assert cell.font.color.rgb == "00FF0000"
+        assert cell.fill.patternType == "solid"
+        assert cell.fill.fgColor.rgb == "00FFFF00"
+        assert cell.border.top.style == "thick"
+        assert cell.border.bottom.style == "thick"
+        assert cell.alignment.horizontal == "center"
+        assert cell.alignment.vertical == "center"
+
 class TestUtils:
     def test_apply_styles(self):
         """Test applying styles from one cell to another"""
